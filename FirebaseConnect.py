@@ -14,26 +14,23 @@ def initFirebase():
     return 'ok'
 
 
-def insertDataFirebase(spotList):
+def insertDataFirebase(path, data):
 
-    for oneSpot in spotList:
-        print(oneSpot['title'])
-        data = {
-            'address': oneSpot['address'],
-            'imgUrl': oneSpot['thumbnailUrl'],
-            'lat':     oneSpot['lat'],
-            'long':    oneSpot['long'],
-            'viewer':  oneSpot['viewer'],
-        }
-
-        ref = db.reference('/spotInform/')
-        userRef = ref.child(oneSpot['title'])
-        userRef.set(data)
+    ref = db.reference(path)
+    ref.set(data)
     
     return 'ok'
 
-def getDataFirebase():
-    ref = db.reference('/spotInform/')
+def getDataFirebase(path):
+    ref = db.reference(path)
     data = ref.get()
 
     return data
+
+def deleteDataFirebase(path):
+    ref = db.reference(path)
+    ref.delete()
+
+    return 'ok'
+
+initFirebase()

@@ -4,9 +4,7 @@ import requests
 import json
 import re
 
-FirebaseConnect.initFirebase()
-
-url = "/m1.aspx?sNo=0000064&keyString=%5e%5e%5e&page=16"
+url = "/m1.aspx?sNo=0000064&keyString=%5e%5e%5e"
 domain = "https://www.taiwan.net.tw"
 
 endFlag = 0
@@ -44,6 +42,7 @@ while endFlag == 0:
                 instagramData = json.loads(instagramRequest.text)
                 viewNum += int(instagramData['graphql']['hashtag']['edge_hashtag_to_media']['count'])
 
+        # get image url & gps info
         infoElement = min(soupInfo.select("dl.info-table"))
         if not soupInfo.select('a#cntPicA0 > img'):
             imgUrl = "https://www.taiwan.net.tw/images/noPic.jpg"
@@ -52,18 +51,14 @@ while endFlag == 0:
         address = min(infoElement.select('a.address'))
         gps = min(infoElement.find_all("dt", string="經度/緯度："))
         gpsInfo = min(gps.find_next_sibling("dd")).split('/')
-        spotList += [
-            {
-                "title": spotLink['title'].replace('/', '\\'),
-                "href": domain + spotLink['href'],
-                "thumbnailUrl": imgUrl,
-                "viewer": viewNum,
-                "address": address.text,
-                "long": gpsInfo[0],
-                "lat": gpsInfo[1],
-
-            }
-        ]
-    
-    # update to Firebase
-    FirebaseConnect.insertDataFirebase(spotList)
+        
+        # insert data to firebase
+        spotData = {
+            "thumbnailUrl": imgUrl,
+            "viewer": viewNum,
+            "address": address.text,
+            "long": gpsInfo[0],
+            "lat": gpsInfo[1],
+        }
+        firebasePath = '/spotInform/' + spotLink['title'].replace('/', '\\')
+        FirebaseConnect.insertDataFirebase(firebasePath, spotData)

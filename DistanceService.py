@@ -1,6 +1,11 @@
 import math
 import FirebaseConnect
-FirebaseConnect.initFirebase()
+import googlemaps
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 def getDistance(distA, distB):
     ra = 6378140
     rb = 6356755
@@ -22,13 +27,20 @@ def getDistance(distA, distB):
     distance = 0.001 * ra * (x + dr)  
     return distance  
 
-def recommendSpot(currentPosition):
-    spotList = FirebaseConnect.getDataFirebase()
+def recommendSpot(currentPosition, transportation):
+    spotList = FirebaseConnect.getDataFirebase('/spotInform/')
+
+    if transportation == 'driving':
+        travelRange = 150
+    elif transportation == 'walk':
+        travelRange = 30
+    elif transportation == 'bicycling':
+        travelRange = 60
 
     recommendList = []
     for oneSpot, spotInfo in spotList.items():
-        if 'imgUrl' in spotInfo:
-                thumbnailUrl = spotInfo['imgUrl']
+        if 'thumbnailUrl' in spotInfo:
+                thumbnailUrl = spotInfo['thumbnailUrl']
         else:
             thumbnailUrl = 'https://www.taiwan.net.tw/images/noPic.jpg'
 
@@ -37,7 +49,7 @@ def recommendSpot(currentPosition):
             "long": float(spotInfo['long']),
         } 
         distance = getDistance(currentPosition, distLocation)
-        if distance <= 20:
+        if distance <= travelRange:
             recommendList += [{
                 'title': oneSpot,
                 'distance': distance,
@@ -49,3 +61,13 @@ def recommendSpot(currentPosition):
     recommendList.sort(key=lambda k: (k.get('viewer', 0)), reverse=True)
 
     return recommendList
+
+# calculate two places distance and duration
+def calPlaceInfo(currentPos, destPos, mode):
+    googleMapKey = os.getenv('GOOGLE_MAP_API_KEY')
+    gmaps = googlemaps.Client(key=googleMapKey)
+    origins = (currentPos['lat'], currentPos['long'])
+    destinations = (destPos['lat'], destPos['long'])
+    result = gmaps.distance_matrix(origins, destinations, mode)
+
+    return result

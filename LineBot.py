@@ -1,5 +1,10 @@
 import DistanceService
 import os
+import FirebaseConnect
+import hashlib
+import ReplyActionService
+from datetime import datetime
+from time import strftime
 from dotenv import load_dotenv
 from flask import Flask, request, abort
 from linebot import (
@@ -21,7 +26,9 @@ from linebot.models import (
     PostbackAction, 
     MessageAction, 
     URIAction, 
-    PostbackEvent
+    PostbackEvent,
+    QuickReplyButton,
+    QuickReply
 )
 
 app = Flask(__name__)
@@ -57,367 +64,21 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
+    print(event)
     if event.source.user_id == "U2512599a6181ea0e2d9af9eae6aecfaf":
-        line_bot_api.reply_message(
-            event.reply_token,
-            FlexSendMessage(
-                alt_text="看你妹",
-                contents={
-                        "type": "bubble",
-                        "size": "mega",
-                        "header": {
-                            "type": "box",
-                            "layout": "vertical",
-                            "contents": [
-                            {
-                                "type": "box",
-                                "layout": "vertical",
-                                "contents": [
-                                {
-                                    "type": "text",
-                                    "text": "FROM",
-                                    "color": "#ffffff66",
-                                    "size": "sm"
-                                },
-                                {
-                                    "type": "text",
-                                    "text": "Akihabara",
-                                    "color": "#ffffff",
-                                    "size": "xl",
-                                    "flex": 4,
-                                    "weight": "bold"
-                                }
-                                ]
-                            },
-                            {
-                                "type": "box",
-                                "layout": "vertical",
-                                "contents": [
-                                {
-                                    "type": "text",
-                                    "text": "TO",
-                                    "color": "#ffffff66",
-                                    "size": "sm"
-                                },
-                                {
-                                    "type": "text",
-                                    "text": "Shinjuku",
-                                    "color": "#ffffff",
-                                    "size": "xl",
-                                    "flex": 4,
-                                    "weight": "bold"
-                                }
-                                ]
-                            },
-                            {
-                                "type": "box",
-                                "layout": "vertical",
-                                "contents": [
-                                {
-                                    "type": "text",
-                                    "text": "TO",
-                                    "color": "#ffffff66",
-                                    "size": "sm"
-                                },
-                                {
-                                    "type": "text",
-                                    "text": "Shinjuku",
-                                    "color": "#ffffff",
-                                    "size": "xl",
-                                    "flex": 4,
-                                    "weight": "bold"
-                                }
-                                ]
-                            }
-                            ],
-                            "paddingAll": "20px",
-                            "backgroundColor": "#0367D3",
-                            "spacing": "md",
-                            "height": "200px",
-                            "paddingTop": "22px"
-                        },
-                        "body": {
-                            "type": "box",
-                            "layout": "vertical",
-                            "contents": [
-                            {
-                                "type": "text",
-                                "text": "Total: 1 hour",
-                                "color": "#b7b7b7",
-                                "size": "xs"
-                            },
-                            {
-                                "type": "box",
-                                "layout": "horizontal",
-                                "contents": [
-                                {
-                                    "type": "text",
-                                    "text": "20:30",
-                                    "size": "sm",
-                                    "gravity": "center"
-                                },
-                                {
-                                    "type": "box",
-                                    "layout": "vertical",
-                                    "contents": [
-                                    {
-                                        "type": "filler"
-                                    },
-                                    {
-                                        "type": "box",
-                                        "layout": "vertical",
-                                        "contents": [
-                                        {
-                                            "type": "filler"
-                                        }
-                                        ],
-                                        "cornerRadius": "30px",
-                                        "height": "12px",
-                                        "width": "12px",
-                                        "borderColor": "#EF454D",
-                                        "borderWidth": "2px"
-                                    },
-                                    {
-                                        "type": "filler"
-                                    }
-                                    ],
-                                    "flex": 0
-                                },
-                                {
-                                    "type": "text",
-                                    "text": "Akihabara",
-                                    "gravity": "center",
-                                    "flex": 4,
-                                    "size": "sm"
-                                }
-                                ],
-                                "spacing": "lg",
-                                "cornerRadius": "30px",
-                                "margin": "xl"
-                            },
-                            {
-                                "type": "box",
-                                "layout": "horizontal",
-                                "contents": [
-                                {
-                                    "type": "box",
-                                    "layout": "baseline",
-                                    "contents": [
-                                    {
-                                        "type": "filler"
-                                    }
-                                    ],
-                                    "flex": 1
-                                },
-                                {
-                                    "type": "box",
-                                    "layout": "vertical",
-                                    "contents": [
-                                    {
-                                        "type": "box",
-                                        "layout": "horizontal",
-                                        "contents": [
-                                        {
-                                            "type": "filler"
-                                        },
-                                        {
-                                            "type": "box",
-                                            "layout": "vertical",
-                                            "contents": [
-                                            {
-                                                "type": "filler"
-                                            }
-                                            ],
-                                            "width": "2px",
-                                            "backgroundColor": "#B7B7B7"
-                                        },
-                                        {
-                                            "type": "filler"
-                                        }
-                                        ],
-                                        "flex": 1
-                                    }
-                                    ],
-                                    "width": "12px"
-                                },
-                                {
-                                    "type": "text",
-                                    "text": "Walk 4min",
-                                    "gravity": "center",
-                                    "flex": 4,
-                                    "size": "xs",
-                                    "color": "#8c8c8c"
-                                }
-                                ],
-                                "spacing": "lg",
-                                "height": "64px"
-                            },
-                            {
-                                "type": "box",
-                                "layout": "horizontal",
-                                "contents": [
-                                {
-                                    "type": "box",
-                                    "layout": "horizontal",
-                                    "contents": [
-                                    {
-                                        "type": "text",
-                                        "text": "20:34",
-                                        "gravity": "center",
-                                        "size": "sm"
-                                    }
-                                    ],
-                                    "flex": 1
-                                },
-                                {
-                                    "type": "box",
-                                    "layout": "vertical",
-                                    "contents": [
-                                    {
-                                        "type": "filler"
-                                    },
-                                    {
-                                        "type": "box",
-                                        "layout": "vertical",
-                                        "contents": [
-                                        {
-                                            "type": "filler"
-                                        }
-                                        ],
-                                        "cornerRadius": "30px",
-                                        "width": "12px",
-                                        "height": "12px",
-                                        "borderWidth": "2px",
-                                        "borderColor": "#6486E3"
-                                    },
-                                    {
-                                        "type": "filler"
-                                    }
-                                    ],
-                                    "flex": 0
-                                },
-                                {
-                                    "type": "text",
-                                    "text": "Ochanomizu",
-                                    "gravity": "center",
-                                    "flex": 4,
-                                    "size": "sm"
-                                }
-                                ],
-                                "spacing": "lg",
-                                "cornerRadius": "30px"
-                            },
-                            {
-                                "type": "box",
-                                "layout": "horizontal",
-                                "contents": [
-                                {
-                                    "type": "box",
-                                    "layout": "baseline",
-                                    "contents": [
-                                    {
-                                        "type": "filler"
-                                    }
-                                    ],
-                                    "flex": 1
-                                },
-                                {
-                                    "type": "box",
-                                    "layout": "vertical",
-                                    "contents": [
-                                    {
-                                        "type": "box",
-                                        "layout": "horizontal",
-                                        "contents": [
-                                        {
-                                            "type": "filler"
-                                        },
-                                        {
-                                            "type": "box",
-                                            "layout": "vertical",
-                                            "contents": [
-                                            {
-                                                "type": "filler"
-                                            }
-                                            ],
-                                            "width": "2px",
-                                            "backgroundColor": "#6486E3"
-                                        },
-                                        {
-                                            "type": "filler"
-                                        }
-                                        ],
-                                        "flex": 1
-                                    }
-                                    ],
-                                    "width": "12px"
-                                },
-                                {
-                                    "type": "text",
-                                    "text": "Metro 1hr",
-                                    "gravity": "center",
-                                    "flex": 4,
-                                    "size": "xs",
-                                    "color": "#8c8c8c"
-                                }
-                                ],
-                                "spacing": "lg",
-                                "height": "64px"
-                            },
-                            {
-                                "type": "box",
-                                "layout": "horizontal",
-                                "contents": [
-                                {
-                                    "type": "text",
-                                    "text": "20:40",
-                                    "gravity": "center",
-                                    "size": "sm"
-                                },
-                                {
-                                    "type": "box",
-                                    "layout": "vertical",
-                                    "contents": [
-                                    {
-                                        "type": "filler"
-                                    },
-                                    {
-                                        "type": "box",
-                                        "layout": "vertical",
-                                        "contents": [
-                                        {
-                                            "type": "filler"
-                                        }
-                                        ],
-                                        "cornerRadius": "30px",
-                                        "width": "12px",
-                                        "height": "12px",
-                                        "borderColor": "#6486E3",
-                                        "borderWidth": "2px"
-                                    },
-                                    {
-                                        "type": "filler"
-                                    }
-                                    ],
-                                    "flex": 0
-                                },
-                                {
-                                    "type": "text",
-                                    "text": "Shinjuku",
-                                    "gravity": "center",
-                                    "flex": 4,
-                                    "size": "sm"
-                                }
-                                ],
-                                "spacing": "lg",
-                                "cornerRadius": "30px"
-                            }
-                            ]
-                        }
-                        }
-            )
-            # TextSendMessage(text=event.message.text)
-        )
+        if event.message.text == '規劃行程':
+            # initial user travel
+            s = hashlib.sha1()
+            s.update(event.source.user_id.encode('utf-8'))
+            enUserId = s.hexdigest()
+            basePath = 'users/{enUserId}'.format(enUserId=enUserId)
+            FirebaseConnect.deleteDataFirebase(basePath)
+            # pick transportation
+            ReplyActionService.pickTransportation(line_bot_api, event.source.user_id)
+        elif event.message.text == '建立行程':
+            ReplyActionService.establishTrip(line_bot_api, event.source.user_id)
+        elif event.message.text == '出發時間':
+            ReplyActionService.pickTransportation(line_bot_api, event.source.user_id)
     elif event.source.user_id != "Udeadbeefdeadbeefdeadbeefdeadbeef":
         line_bot_api.reply_message(
             event.reply_token,
@@ -426,59 +87,71 @@ def handle_message(event):
 @handler.add(MessageEvent, message=LocationMessage)
 def handle_location(event):
     if event.message.type == 'location':
-        requestData = event.message
-        pos = {
-            "lat" : event.message.latitude,
-            "long": event.message.longitude,
-        }
-        recommendList = DistanceService.recommendSpot(pos)
-        r=0
-        columns = []
-        for oneRecommend in recommendList:
-            if r<=5:
-                columns += [
-                    CarouselColumn(
-                                thumbnail_image_url=oneRecommend['thumbnailUrl'],
-                                    title=oneRecommend['title'],
-                                    text=oneRecommend['address'],
-                                    actions=[
-                                        PostbackAction(
-                                            label='喜翻',
-                                            display_text='喜翻',
-                                            data='action=like&spot=' + oneRecommend['title']
-                                        ),
-                                        # MessageAction(
-                                        #     label='message2',
-                                        #     text='message text2'
-                                        # ),
-                                        # URIAction(
-                                        #     label='uri2',
-                                        #     uri='http://example.com/2'
-                                        # )
-                                    ]
-                )]
-                r +=1
-            else:
-                break;
-
-        line_bot_api.reply_message(
-                    event.reply_token,
-                    TemplateSendMessage(
-                        alt_text="推薦來囉",
-                        template=CarouselTemplate(
-                            columns=columns
-                        )))
+        data = event.message
+        ReplyActionService.recommendSpot(line_bot_api, event.source.user_id, event.reply_token, data)
 
 @handler.add(PostbackEvent)
 def reply_back(event):
-    print(event)
     if event.type == "postback":
+        s = hashlib.sha1()
+        s.update(event.source.user_id.encode('utf-8'))
+        enUserId = s.hexdigest()
+        # analyze url parameters
         data = parse.parse_qs(event.postback.data)
-        if data['action'][0] == 'like':
-             line_bot_api.reply_message(
+        action = data['action'][0]
+        likeSpots = []
+        if action == 'like':
+            dataPath = 'users/{enUserId}/spotList'.format(enUserId = enUserId)
+            dataFb = FirebaseConnect.getDataFirebase(dataPath)
+            if dataFb is not None:
+                check = next((check for check in dataFb if check['name'] == data['spot'][0]), None)
+                if check is not None:
+                    replyText = '已加入喜翻'
+                else:
+                    replyText = '幫您加入喜翻'
+                    likeSpots = dataFb
+                    likeSpots += [{
+                        "name": data['spot'][0],
+                        "distance": data['distance'][0]
+                    }]
+                    FirebaseConnect.insertDataFirebase(dataPath, likeSpots)
+            else:
+                replyText = '幫您加入喜翻'
+                likeSpots += [{
+                    "name": data['spot'][0],
+                    "distance": data['distance'][0]
+                }]
+                FirebaseConnect.insertDataFirebase(dataPath, likeSpots)
+                
+            line_bot_api.reply_message(
                     event.reply_token,
-                    TextSendMessage(text=data['spot'][0])
+                    TextSendMessage(text=replyText)
                 )
+
+            ReplyActionService.askEnd(line_bot_api, event.source.user_id)
+        elif action == 'pick_time':
+            # 挑選時間
+            currentTime = datetime.now()
+            pickTime = event.postback.params.get('time', currentTime.strftime("%H:%M"))
+
+            dataPath = 'users/{enUserId}/startTime'.format(enUserId = enUserId)
+            FirebaseConnect.insertDataFirebase(dataPath, pickTime)
+            replyText = "你選的出發時間為: {time}".format(time=pickTime)
+            result = ReplyActionService.PushMessage(line_bot_api, event.reply_token, replyText)
+            if result == 'ok':
+                ReplyActionService.askEstablished(line_bot_api, event.source.user_id)
+            #     ReplyActionService.pickTransportation(line_bot_api, event.source.user_id)
+        elif action == 'pick_transportation':
+            # 挑選交通工具
+            dataPath = 'users/{enUserId}/transportation'.format(enUserId = enUserId)
+            FirebaseConnect.insertDataFirebase(dataPath, data['transportation'][0])
+            replyText = "你挑選的交通工具為: {transportation}".format(transportation=data['display_text'][0])
+            result = ReplyActionService.PushMessage(line_bot_api, event.reply_token, replyText)
+            if result == 'ok':
+                # 傳送gps
+                ReplyActionService.pickGps(line_bot_api, event.source.user_id)
+
+
         # data = event.postback.data
         # print(event.postback.params['like'])
         # line_bot_api.reply_message(
@@ -488,157 +161,3 @@ def reply_back(event):
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=8080, debug=True)
-
-# FlexSendMessage(
-#     alt_text='hello',
-#     contents={
-#                 "type": "bubble",
-#                 "hero": {
-#                     "type": "image",
-#                     "url": "https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png",
-#                     "size": "full",
-#                     "aspectRatio": "20:13",
-#                     "aspectMode": "cover",
-#                     "action": {
-#                     "type": "uri",
-#                     "uri": "http://linecorp.com/"
-#                     }
-#                 },
-#                 "body": {
-#                     "type": "box",
-#                     "layout": "vertical",
-#                     "contents": [
-#                     {
-#                         "type": "text",
-#                         "text": "Brown Cafe",
-#                         "weight": "bold",
-#                         "size": "xl"
-#                     },
-#                     {
-#                         "type": "box",
-#                         "layout": "baseline",
-#                         "margin": "md",
-#                         "contents": [
-#                         {
-#                             "type": "icon",
-#                             "size": "sm",
-#                             "url": "https://scdn.line-apps.com/n/channel_devcenter/img/fx/review_gold_star_28.png"
-#                         },
-#                         {
-#                             "type": "icon",
-#                             "size": "sm",
-#                             "url": "https://scdn.line-apps.com/n/channel_devcenter/img/fx/review_gold_star_28.png"
-#                         },
-#                         {
-#                             "type": "icon",
-#                             "size": "sm",
-#                             "url": "https://scdn.line-apps.com/n/channel_devcenter/img/fx/review_gold_star_28.png"
-#                         },
-#                         {
-#                             "type": "icon",
-#                             "size": "sm",
-#                             "url": "https://scdn.line-apps.com/n/channel_devcenter/img/fx/review_gold_star_28.png"
-#                         },
-#                         {
-#                             "type": "icon",
-#                             "size": "sm",
-#                             "url": "https://scdn.line-apps.com/n/channel_devcenter/img/fx/review_gray_star_28.png"
-#                         },
-#                         {
-#                             "type": "text",
-#                             "text": "4.0",
-#                             "size": "sm",
-#                             "color": "#999999",
-#                             "margin": "md",
-#                             "flex": 0
-#                         }
-#                         ]
-#                     },
-#                     {
-#                         "type": "box",
-#                         "layout": "vertical",
-#                         "margin": "lg",
-#                         "spacing": "sm",
-#                         "contents": [
-#                         {
-#                             "type": "box",
-#                             "layout": "baseline",
-#                             "spacing": "sm",
-#                             "contents": [
-#                             {
-#                                 "type": "text",
-#                                 "text": "Place",
-#                                 "color": "#aaaaaa",
-#                                 "size": "sm",
-#                                 "flex": 1
-#                             },
-#                             {
-#                                 "type": "text",
-#                                 "text": "Miraina Tower, 4-1-6 Shinjuku, Tokyo",
-#                                 "wrap": True,
-#                                 "color": "#666666",
-#                                 "size": "sm",
-#                                 "flex": 5
-#                             }
-#                             ]
-#                         },
-#                         {
-#                             "type": "box",
-#                             "layout": "baseline",
-#                             "spacing": "sm",
-#                             "contents": [
-#                             {
-#                                 "type": "text",
-#                                 "text": "Time",
-#                                 "color": "#aaaaaa",
-#                                 "size": "sm",
-#                                 "flex": 1
-#                             },
-#                             {
-#                                 "type": "text",
-#                                 "text": "10:00 - 23:00",
-#                                 "wrap": True,
-#                                 "color": "#666666",
-#                                 "size": "sm",
-#                                 "flex": 5
-#                             }
-#                             ]
-#                         }
-#                         ]
-#                     }
-#                     ]
-#                 },
-#                 "footer": {
-#                     "type": "box",
-#                     "layout": "vertical",
-#                     "spacing": "sm",
-#                     "contents": [
-#                     {
-#                         "type": "button",
-#                         "style": "link",
-#                         "height": "sm",
-#                         "action": {
-#                         "type": "uri",
-#                         "label": "CALL",
-#                         "uri": "https://linecorp.com"
-#                         }
-#                     },
-#                     {
-#                         "type": "button",
-#                         "style": "link",
-#                         "height": "sm",
-#                         "action": {
-#                         "type": "uri",
-#                         "label": "WEBSITE",
-#                         "uri": "https://linecorp.com"
-#                         }
-#                     },
-#                     {
-#                         "type": "spacer",
-#                         "size": "sm"
-#                     }
-#                     ],
-#                     "flex": 0
-#                 }
-#             }
-# )
