@@ -3,6 +3,7 @@ import FirebaseConnect
 import googlemaps
 import os
 from dotenv import load_dotenv
+from collections import OrderedDict
 
 load_dotenv()
 
@@ -27,12 +28,12 @@ def getDistance(distA, distB):
     distance = 0.001 * ra * (x + dr)  
     return distance  
 
-def recommendSpot(currentPosition, transportation):
+def RecommendSpot(currentPosition, transportation):
     spotList = FirebaseConnect.getDataFirebase('/spotInform/')
 
     if transportation == 'driving':
         travelRange = 150
-    elif transportation == 'walk':
+    elif transportation == 'walking':
         travelRange = 30
     elif transportation == 'bicycling':
         travelRange = 60
@@ -60,6 +61,31 @@ def recommendSpot(currentPosition, transportation):
 
     recommendList.sort(key=lambda k: (k.get('viewer', 0)), reverse=True)
 
+    return recommendList
+
+def PopularSpot():
+    spotList = FirebaseConnect.getDataFirebase('/spotInform/', 'viewer', 'DESC', 10)
+    
+    recommendList = []
+    for oneSpot, spotInfo in spotList.items():
+        if 'thumbnailUrl' in spotInfo:
+                thumbnailUrl = spotInfo['thumbnailUrl']
+        else:
+            thumbnailUrl = 'https://www.taiwan.net.tw/images/noPic.jpg'
+
+        distLocation = {
+            "lat": float(spotInfo['lat']),
+            "long": float(spotInfo['long']),
+        } 
+        
+        recommendList += [{
+            'title': oneSpot,
+            'address': spotInfo['address'],
+            'viewer': int(spotInfo['viewer']),
+            'thumbnailUrl': thumbnailUrl
+        }]
+
+    recommendList.sort(key=lambda k: (k.get('viewer', 0)), reverse=True)
     return recommendList
 
 # calculate two places distance and duration

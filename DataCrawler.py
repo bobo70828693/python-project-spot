@@ -30,7 +30,8 @@ while endFlag == 0:
         viewNum = int(viewer[pos+5:])
 
         # get spot info
-        htmlInfo = requests.get(domain + "/" + spotLink['href'])
+        spotHref = domain + "/" + spotLink['href']
+        htmlInfo = requests.get(spotHref)
         soupInfo = BeautifulSoup(htmlInfo.text, 'html.parser')
         print(spotLink['title'])
         # get instagram viewer count
@@ -44,17 +45,30 @@ while endFlag == 0:
 
         # get image url & gps info
         infoElement = min(soupInfo.select("dl.info-table"))
-        if not soupInfo.select('a#cntPicA0 > img'):
-            imgUrl = "https://www.taiwan.net.tw/images/noPic.jpg"
+        infoSide = soupInfo.find(class_='infoside')
+        if len(infoSide.find_next_siblings('p')) == 0:
+            description = "尚無資訊"
         else:
-            imgUrl = min(soupInfo.select('a#cntPicA0 > img'))['data-src']
+            description = infoSide.find_next_siblings('p')[0].get_text()
+
+        album = min(soupInfo.select('ul.album'))
+        imageData = album.select('a.album-link > img')
+        imageList = [oneImg['data-src'] for oneImg in imageData]
+        if not imageList:
+            thumbnailUrl = "https://www.taiwan.net.tw/images/noPic.jpg"
+        else:
+            thumbnailUrl = min(imageList)
+
         address = min(infoElement.select('a.address'))
         gps = min(infoElement.find_all("dt", string="經度/緯度："))
         gpsInfo = min(gps.find_next_sibling("dd")).split('/')
         
         # insert data to firebase
         spotData = {
-            "thumbnailUrl": imgUrl,
+            "link": spotHref,
+            "description": description[0:100].replace('\r\n',''),
+            "thumbnailUrl": thumbnailUrl,
+            "imgList": imageList,
             "viewer": viewNum,
             "address": address.text,
             "long": gpsInfo[0],

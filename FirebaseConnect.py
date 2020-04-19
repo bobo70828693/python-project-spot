@@ -15,21 +15,32 @@ def initFirebase():
 
 
 def insertDataFirebase(path, data):
-
     ref = db.reference(path)
     ref.set(data)
     
     return 'ok'
 
-def getDataFirebase(path):
+def getDataFirebase(path, sort = None, sortBy = 'DESC' ,limit = 10):
     ref = db.reference(path)
-    data = ref.get()
 
-    return data
+    if sort is not None:
+        ref = ref.order_by_child(sort)
+        if sortBy == 'DESC':
+            ref = ref.limit_to_last(limit)
+        elif sortBy == 'ASC':
+            ref = ref.limit_to_first(limit)
+
+    return ref.get()
 
 def deleteDataFirebase(path):
     ref = db.reference(path)
     ref.delete()
+
+    return 'ok'
+
+def updateDataFirebase(path, data):
+    ref = db.reference(path)
+    ref.update(data)
 
     return 'ok'
 

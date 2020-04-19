@@ -65,30 +65,59 @@ def callback():
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     print(event)
-    if event.source.user_id == "U2512599a6181ea0e2d9af9eae6aecfaf":
+    userId = event.source.user_id
+    if userId == "U2512599a6181ea0e2d9af9eae6aecfaf":
+        s = hashlib.sha1()
+        s.update(userId.encode('utf-8'))
+        enUserId = s.hexdigest()
         if event.message.text == '規劃行程':
             # initial user travel
-            s = hashlib.sha1()
-            s.update(event.source.user_id.encode('utf-8'))
-            enUserId = s.hexdigest()
             basePath = 'users/{enUserId}'.format(enUserId=enUserId)
             FirebaseConnect.deleteDataFirebase(basePath)
+
             # pick transportation
-            ReplyActionService.pickTransportation(line_bot_api, event.source.user_id)
+            ReplyActionService.PickTransportation(line_bot_api, userId)
+        elif event.message.text == '熱門景點':
+            ReplyActionService.RecommendPoPularSpot(line_bot_api, userId)
         elif event.message.text == '建立行程':
-            ReplyActionService.establishTrip(line_bot_api, event.source.user_id)
+            ReplyActionService.EstablishTrip(line_bot_api, userId)
+        elif event.message.text == '查看目前清單':
+            ReplyActionService.ReviewSpot(line_bot_api, userId)
+            ReplyActionService.AskEnd(line_bot_api, userId, 'preview')
         elif event.message.text == '出發時間':
-            ReplyActionService.pickTransportation(line_bot_api, event.source.user_id)
-    elif event.source.user_id != "Udeadbeefdeadbeefdeadbeefdeadbeef":
+            ReplyActionService.PickTransportation(line_bot_api, userId)
+        elif event.message.text == '更多景點':
+            ReplyActionService.RecommendSpot(line_bot_api, userId, event.reply_token)
+        elif event.message.text == '清除目前清單':
+            # initial user travel
+            basePath = 'users/{enUserId}/spotList'.format(enUserId=enUserId)
+            FirebaseConnect.deleteDataFirebase(basePath)
+
+    elif userId != "Udeadbeefdeadbeefdeadbeefdeadbeef":
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text=event.message.text))
 
 @handler.add(MessageEvent, message=LocationMessage)
 def handle_location(event):
+    s = hashlib.sha1()
+    s.update(event.source.user_id.encode('utf-8'))
+    enUserId = s.hexdigest()
     if event.message.type == 'location':
+        userPath = 'users/{enUserId}/mode'.format(enUserId = enUserId)
+
+        userMode = FirebaseConnect.getDataFirebase(userPath)
         data = event.message
-        ReplyActionService.recommendSpot(line_bot_api, event.source.user_id, event.reply_token, data)
+        if userMode == 'establish':
+            pos = {
+                "lat" : data.latitude,
+                "long": data.longitude,
+            }
+            posPath = "users/{enUserId}/pos".format(enUserId=enUserId)
+            FirebaseConnect.insertDataFirebase(posPath, pos)
+            ReplyActionService.EstablishTrip(line_bot_api, event.source.user_id)
+        else:
+            ReplyActionService.RecommendSpot(line_bot_api, event.source.user_id, event.reply_token, data)
 
 @handler.add(PostbackEvent)
 def reply_back(event):
@@ -101,8 +130,13 @@ def reply_back(event):
         action = data['action'][0]
         likeSpots = []
         if action == 'like':
+            userPath = 'users/{enUserId}/'.format(enUserId = enUserId)
+            userData = FirebaseConnect.getDataFirebase(userPath)
+            pos = userData.get('pos', None)
+            dataFb = userData.get('spotList', None)
             dataPath = 'users/{enUserId}/spotList'.format(enUserId = enUserId)
-            dataFb = FirebaseConnect.getDataFirebase(dataPath)
+            distance = data.get('distance', 0)
+            
             if dataFb is not None:
                 check = next((check for check in dataFb if check['name'] == data['spot'][0]), None)
                 if check is not None:
@@ -112,23 +146,32 @@ def reply_back(event):
                     likeSpots = dataFb
                     likeSpots += [{
                         "name": data['spot'][0],
-                        "distance": data['distance'][0]
+                        "distance": distance
                     }]
                     FirebaseConnect.insertDataFirebase(dataPath, likeSpots)
             else:
                 replyText = '幫您加入喜翻'
                 likeSpots += [{
                     "name": data['spot'][0],
-                    "distance": data['distance'][0]
+                    "distance": distance
                 }]
                 FirebaseConnect.insertDataFirebase(dataPath, likeSpots)
-                
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=replyText)
+            )
+            ReplyActionService.AskEnd(line_bot_api, event.source.user_id)
+        if action == 'unLike':
+            dataPath = 'users/{enUserId}/spotList/{key}'.format(enUserId = enUserId, key = data['key'][0])
+            FirebaseConnect.updateDataFirebase(dataPath, {"unLike": 1})
+
             line_bot_api.reply_message(
                     event.reply_token,
-                    TextSendMessage(text=replyText)
+                    TextSendMessage(text="已幫你取消")
                 )
 
-            ReplyActionService.askEnd(line_bot_api, event.source.user_id)
+            ReplyActionService.AskEnd(line_bot_api, event.source.user_id)
         elif action == 'pick_time':
             # 挑選時間
             currentTime = datetime.now()
@@ -139,8 +182,8 @@ def reply_back(event):
             replyText = "你選的出發時間為: {time}".format(time=pickTime)
             result = ReplyActionService.PushMessage(line_bot_api, event.reply_token, replyText)
             if result == 'ok':
-                ReplyActionService.askEstablished(line_bot_api, event.source.user_id)
-            #     ReplyActionService.pickTransportation(line_bot_api, event.source.user_id)
+                ReplyActionService.AskEstablished(line_bot_api, event.source.user_id)
+            #     ReplyActionService.PickTransportation(line_bot_api, event.source.user_id)
         elif action == 'pick_transportation':
             # 挑選交通工具
             dataPath = 'users/{enUserId}/transportation'.format(enUserId = enUserId)
@@ -149,15 +192,10 @@ def reply_back(event):
             result = ReplyActionService.PushMessage(line_bot_api, event.reply_token, replyText)
             if result == 'ok':
                 # 傳送gps
-                ReplyActionService.pickGps(line_bot_api, event.source.user_id)
-
-
-        # data = event.postback.data
-        # print(event.postback.params['like'])
-        # line_bot_api.reply_message(
-        #     event.reply_token,
-        #     TextSendMessage
-        # )
+                ReplyActionService.PickGps(line_bot_api, event.source.user_id)
+        elif action == 'spot_detail':
+            distance = data.get('distance', [0])
+            result = ReplyActionService.SpotDetail(line_bot_api, event.reply_token, min(data['spot']), min(distance))
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=8080, debug=True)
