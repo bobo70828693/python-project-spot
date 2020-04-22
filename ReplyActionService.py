@@ -1,6 +1,10 @@
 import FirebaseConnect
 import hashlib
 import DistanceService
+import os
+import WeatherService
+import configparser
+from dotenv import load_dotenv
 from time import strftime,strptime,gmtime
 from datetime import datetime, timedelta
 from linebot.models import (
@@ -15,13 +19,12 @@ from linebot.models import (
     CarouselColumn,
     LocationAction
 )
-
-import os
-from dotenv import load_dotenv
 from linebot import (
     LineBotApi, WebhookHandler
 )
 load_dotenv()
+config = configparser.ConfigParser()
+config.read('weather.ini')
 
 def AskEnd(lineBotApi, userId, mode = 'default'):
     currentTime = datetime.now()
@@ -63,7 +66,6 @@ def AskEnd(lineBotApi, userId, mode = 'default'):
                 ])
         ))
 
-
 def AskEstablished(lineBotApi, userId):
     lineBotApi.push_message(
         userId, 
@@ -73,6 +75,7 @@ def AskEstablished(lineBotApi, userId):
                 QuickReplyButton(action=MessageAction(label="出發", text="建立行程"))
             ])
     ))
+
 def RecommendSpot(lineBotApi, userId, replyToken, data = None):
     s = hashlib.sha1()
     s.update(userId.encode('utf-8'))
@@ -166,7 +169,6 @@ def RecommendPoPularSpot(lineBotApi, userId):
             template=CarouselTemplate(
                 columns=columns
             )))
-
 
 def ReviewSpot(lineBotApi, userId):
     s = hashlib.sha1()
@@ -535,7 +537,8 @@ def PickGps(lineBotApi, userId):
 def SpotDetail(lineBotApi, replyToken, spotName, distance):
     dataPath = "spotInform/{spotName}".format(spotName=spotName)
     spotInfo = FirebaseConnect.getDataFirebase(dataPath)
-
+    weatherInfo = WeatherService.getWeatherInfo(spotInfo['address'])
+    weatherImgUrl = config['weather.classify'][str(weatherInfo['weather']['classify'])]
     imgContent = []
     if len(spotInfo['imgList']) > 3:
         imgContent = [
@@ -601,6 +604,40 @@ def SpotDetail(lineBotApi, replyToken, spotName, distance):
             "text": "{description} ..... ".format(description=spotInfo['description'])
         }
     ]
+    
+    weatherContent = [
+        {
+            "type": "text",
+            "text": "目前天氣狀況",
+            "weight": "bold",
+            "gravity": "center",
+            "size": "sm",
+            "color": "#000000",
+            "position": "absolute",
+            "offsetTop": "20px"
+        },
+        {
+            "type": "image",
+            "url": weatherImgUrl,
+            "aspectMode": "cover",
+            "aspectRatio": "150:196",
+            "gravity": "center",
+            "flex": 1,
+            "margin": "none",
+            "position": "relative",
+            "size": "xxs",
+            "offsetStart": "10px"
+        }
+    ]
+
+    weatherDescriptionContent = [
+        {
+            "type": "span",
+            "text": weatherInfo['weather']['description'],
+            "size": "sm",
+            "color": "#bcbcbc"
+        }
+    ]
 
     linkContent = [
         {
@@ -632,7 +669,7 @@ def SpotDetail(lineBotApi, replyToken, spotName, distance):
             "action": {
                 "label": "喜翻",
                 "type": "postback",
-                "display_text": "喜翻",
+                "text": "喜翻",
                 "data": "action=like&spot={title}&distance={distance}".format(title=spotName, distance=distance)
             }
         }
@@ -659,6 +696,16 @@ def SpotDetail(lineBotApi, replyToken, spotName, distance):
                             "type": "text",
                             "contents": descContent,
                             "size": "sm",
+                            "wrap": True
+                        },
+                        {
+                            "type": "box",
+                            "layout": "vertical",
+                            "contents": weatherContent
+                        },
+                        {
+                            "type": "text",
+                            "contents": weatherDescriptionContent,
                             "wrap": True
                         },
                         {
@@ -694,7 +741,7 @@ def SpotDetail(lineBotApi, replyToken, spotName, distance):
             "contents": bodyContent
         },
         "footer": {
-            "type": "button",
+            "type": "box",
             "layout": "vertical",
             "contents": footerContent,
             "flex": 0
