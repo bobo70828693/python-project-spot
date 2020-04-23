@@ -22,7 +22,7 @@ def getWeatherInfo(spotAddress):
         locationName = min(region)
 
     postUrl = url.format(dataId=cityDataId, authorization=weatherToken)
-    postUrl += '&elementName=Wx,WeatherDescription'
+    postUrl += '&elementName=Wx,WeatherDescription,AT'
     if locationName is not None:
         postUrl += '&locationName={locationName}'.format(locationName=locationName)
 
@@ -32,7 +32,6 @@ def getWeatherInfo(spotAddress):
     # get weather api response
     if requestData.get('success', 'false') == 'true':
         records = requestData['records']['locations'][0]['location'][0]
-        
         for recordData in records['weatherElement']:
             if recordData['elementName'] == 'Wx':
                 # 天氣現象
@@ -41,12 +40,15 @@ def getWeatherInfo(spotAddress):
             elif recordData['elementName'] == 'WeatherDescription':
                 # 天氣預報綜合描述
                 weatherDataDescription = recordData['time'][0]['elementValue'][0]['value']
+            elif recordData['elementName'] == 'AT':
+                temperature = recordData['time'][0]['elementValue'][0]['value'] + "℃"
         
         data = {
             "city": city,
             "locationName": locationName,
             "weather": {
                 "description": weatherDataDescription,
+                "temperature": temperature,
                 "short_text": weatherDataText,
                 "classify": int(weatherDataClassify)
             }
