@@ -65,7 +65,7 @@ def RecommendSpot(currentPosition, transportation):
     return recommendList
 
 def PopularSpot():
-    spotList = FirebaseConnect.getDataFirebase('/spotInform/', 'viewer', 'DESC', 10)
+    spotList = FirebaseConnect.getDataFirebase('/spotInform/', 'viewer', 'DESC')
     
     recommendList = []
     for oneSpot, spotInfo in spotList.items():
@@ -109,7 +109,7 @@ def RegionSpot(region):
             }]
 
     handleSpot.sort(key=lambda k: (k.get('viewer', 0)), reverse=True)
-    return handleSpot[0:10]
+    return handleSpot
 
 # calculate two places distance and duration
 def calPlaceInfo(currentPos, destPos, mode):

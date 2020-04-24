@@ -83,7 +83,14 @@ def handle_message(event):
     elif eventMsg == '出發時間':
         ReplyActionService.PickTransportation(line_bot_api, userId)
     elif eventMsg == '更多景點':
-        ReplyActionService.RecommendSpot(line_bot_api, userId, event.reply_token)
+        basePath = 'users/{enUserId}'.format(enUserId=enUserId)
+        data = FirebaseConnect.getDataFirebase(basePath)
+        userMode = data.get('mode', 'default')
+        userSelectedRegion = data.get('regionSelected', '台北')
+        if userMode == 'default':
+            ReplyActionService.RecommendSpot(line_bot_api, userId, event.reply_token)
+        else:
+            ReplyActionService.RecommendCustomSpot(line_bot_api, userId, event.reply_token, userMode, userSelectedRegion)
     elif eventMsg == '清除目前清單':
         # initial user travel
         basePath = 'users/{enUserId}/spotList'.format(enUserId=enUserId)

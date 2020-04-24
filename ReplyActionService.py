@@ -244,132 +244,141 @@ def RecommendCustomSpot(lineBotApi, userId, replyToken, mode = 'popular', data =
     s.update(userId.encode('utf-8'))
     enUserId = s.hexdigest()
     userPath = 'users/{enUserId}'.format(enUserId=enUserId)
-    FirebaseConnect.updateDataFirebase(userPath, {'mode': 'popular'})
+    FirebaseConnect.updateDataFirebase(userPath, {'mode': mode})
+    userData = FirebaseConnect.getDataFirebase(userPath)
+    userSpotList = userData.get('spotList', [])
 
     if mode == 'popular':
         spotList = DistanceService.PopularSpot()
     elif mode == 'region':
         spotList = DistanceService.RegionSpot(data)
+        FirebaseConnect.updateDataFirebase(userPath, {'regionSelected': data})
 
     carouselColumn = []
+    r = 0
     for oneSpot in spotList:
-        weatherInfo = WeatherService.getWeatherInfo(oneSpot['address'])
-        weatherImgUrl = config['weather.classify'][str(weatherInfo['weather']['classify'])]
-        bodyComponent = {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-                {
+        if r < 10:
+            checkExist = next((checkExist for checkExist in userSpotList if checkExist['name'] == oneSpot['title']), None)
+            weatherInfo = WeatherService.getWeatherInfo(oneSpot['address'])
+            weatherImgUrl = config['weather.classify'][str(weatherInfo['weather']['classify'])]
+            if checkExist is None:
+                bodyComponent = {
                     "type": "box",
-                    "layout": "horizontal",
+                    "layout": "vertical",
                     "contents": [
-                        {
-                            "type": "image",
-                            "url": oneSpot['thumbnailUrl'],
-                            "size": "full",
-                            "aspectRatio": "20:13",
-                            "aspectMode": "cover",
-                            "backgroundColor": "#FFFFFF"
-                        },
                         {
                             "type": "box",
                             "layout": "horizontal",
                             "contents": [
                                 {
-                                "type": "text",
-                                "text": weatherInfo['weather']['temperature'],
-                                "size": "xxs",
-                                "align": "start",
-                                "flex": 1,
-                                "position": "relative",
-                                "gravity": "center",
-                                "margin": "none",
-                                "offsetStart": "10px"
+                                    "type": "image",
+                                    "url": oneSpot['thumbnailUrl'],
+                                    "size": "full",
+                                    "aspectRatio": "20:13",
+                                    "aspectMode": "cover",
+                                    "backgroundColor": "#FFFFFF"
                                 },
                                 {
-                                "type": "image",
-                                "url": weatherImgUrl,
-                                "size": "full",
-                                "aspectMode": "fit",
-                                "offsetEnd": "1px"
+                                    "type": "box",
+                                    "layout": "horizontal",
+                                    "contents": [
+                                        {
+                                        "type": "text",
+                                        "text": weatherInfo['weather']['temperature'],
+                                        "size": "xxs",
+                                        "align": "start",
+                                        "flex": 1,
+                                        "position": "relative",
+                                        "gravity": "center",
+                                        "margin": "none",
+                                        "offsetStart": "10px"
+                                        },
+                                        {
+                                        "type": "image",
+                                        "url": weatherImgUrl,
+                                        "size": "full",
+                                        "aspectMode": "fit",
+                                        "offsetEnd": "1px"
+                                        }
+                                    ],
+                                    "cornerRadius": "100px",
+                                    "backgroundColor": "#ffffff",
+                                    "position": "absolute",
+                                    "offsetTop": "10px",
+                                    "offsetStart": "10px",
+                                    "width": "65px",
+                                    "height": "26px"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "box",
+                            "layout": "vertical",
+                            "contents": [
+                                {
+                                    "type": "text",
+                                    "text": oneSpot['title'],
+                                    "weight": "bold",
+                                    "size": "lg",
+                                    "margin": "md"
+                                },
+                                {
+                                    "type": "text",
+                                    "text": oneSpot['address'],
+                                    "margin": "xs",
+                                    "color": "#8d939e"
+                                },
+                                {
+                                    "type": "spacer"
                                 }
                             ],
-                            "cornerRadius": "100px",
-                            "backgroundColor": "#ffffff",
-                            "position": "absolute",
-                            "offsetTop": "10px",
-                            "offsetStart": "10px",
-                            "width": "65px",
-                            "height": "26px"
-                        }
-                    ]
-                },
-                {
-                    "type": "box",
-                    "layout": "vertical",
-                    "contents": [
-                        {
-                            "type": "text",
-                            "text": oneSpot['title'],
-                            "weight": "bold",
-                            "size": "lg",
-                            "margin": "md"
-                        },
-                        {
-                            "type": "text",
-                            "text": oneSpot['address'],
-                            "margin": "xs",
-                            "color": "#8d939e"
-                        },
-                        {
-                            "type": "spacer"
+                            "paddingAll": "15px"
                         }
                     ],
-                    "paddingAll": "15px"
+                    "paddingAll": "0px"
                 }
-            ],
-            "paddingAll": "0px"
-        }
 
-        footerComponent = {
-            "type": "box",
-            "layout": "vertical",
-            "spacing": "sm",
-            "contents": [
-                {
-                    "type": "button",
-                    "action": {
-                        "type": "postback",
-                        "label": "了解更多",
-                        "text": "詳細資訊",
-                        "data": 'action=spot_detail&spot={title}'.format(title=oneSpot['title'])
-                    },
-                    "height": "sm"
-                },
-                {
-                    "type": "button",
-                    "action": {
-                        "type": "postback",
-                        "label": "喜翻",
-                        "text": "喜翻",
-                        "data": 'action=like&spot={title}'.format(title=oneSpot['title'])
-                    },
-                    "height": "sm"
+                footerComponent = {
+                    "type": "box",
+                    "layout": "vertical",
+                    "spacing": "sm",
+                    "contents": [
+                        {
+                            "type": "button",
+                            "action": {
+                                "type": "postback",
+                                "label": "了解更多",
+                                "text": "詳細資訊",
+                                "data": 'action=spot_detail&spot={title}'.format(title=oneSpot['title'])
+                            },
+                            "height": "sm"
+                        },
+                        {
+                            "type": "button",
+                            "action": {
+                                "type": "postback",
+                                "label": "喜翻",
+                                "text": "喜翻",
+                                "data": 'action=like&spot={title}'.format(title=oneSpot['title'])
+                            },
+                            "height": "sm"
+                        }
+                    ],
+                    "flex": 0
                 }
-            ],
-            "flex": 0
-        }
 
-        carouselColumn += [{
-            "type": "bubble",
-            "body": bodyComponent,
-            "footer": footerComponent,
-            "styles": {
-                "footer": {
-                "separator": True
-                }
-            }
-        }]
+                carouselColumn += [{
+                    "type": "bubble",
+                    "body": bodyComponent,
+                    "footer": footerComponent,
+                    "styles": {
+                        "footer": {
+                        "separator": True
+                        }
+                    }
+                }]
+
+                r += 1
 
     FlexMsg = {
         "type": "carousel",
@@ -379,7 +388,7 @@ def RecommendCustomSpot(lineBotApi, userId, replyToken, mode = 'popular', data =
     lineBotApi.reply_message(
         replyToken,
         FlexSendMessage(
-            alt_text="熱門景點",
+            alt_text="推薦來囉",
             contents=FlexMsg
         )
     )
@@ -727,6 +736,7 @@ def EstablishTrip(lineBotApi, userId, replyToken):
                 contents=FlexMsg
             )
         )
+        FirebaseConnect.deleteDataFirebase(dataPath)
 
 def PickTransportation(lineBotApi, replyToken):
     lineBotApi.reply_message(
@@ -964,7 +974,7 @@ def SpotDetail(lineBotApi, replyToken, spotName, distance):
     lineBotApi.reply_message(
         replyToken,
         FlexSendMessage(
-            alt_text="test",
+            alt_text="詳細資訊",
             contents=FlexMsg
         )
     )
