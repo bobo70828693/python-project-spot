@@ -2,6 +2,7 @@ import math
 import FirebaseConnect
 import googlemaps
 import os
+import globals
 from dotenv import load_dotenv
 from collections import OrderedDict
 
@@ -87,6 +88,28 @@ def PopularSpot():
 
     recommendList.sort(key=lambda k: (k.get('viewer', 0)), reverse=True)
     return recommendList
+
+def RegionSpot(region):
+    region = region.replace('台', '臺')
+    spotList = globals.spotData
+    handleSpot = []
+
+    for title, info in spotList.items():
+        if info['address'][0:4].find(region) != -1:
+            if 'thumbnailUrl' in info:
+                thumbnailUrl = info['thumbnailUrl']
+            else:
+                thumbnailUrl = 'https://www.taiwan.net.tw/images/noPic.jpg'
+
+            handleSpot += [{
+                'title': title,
+                'address': info['address'],
+                'viewer': int(info['viewer']),
+                'thumbnailUrl': thumbnailUrl
+            }]
+
+    handleSpot.sort(key=lambda k: (k.get('viewer', 0)), reverse=True)
+    return handleSpot[0:10]
 
 # calculate two places distance and duration
 def calPlaceInfo(currentPos, destPos, mode):

@@ -2,6 +2,7 @@ import configparser
 import os
 import FirebaseConnect
 import requests
+import globals
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -55,4 +56,3 @@ def getWeatherInfo(spotAddress):
         }
     
     return data
-        

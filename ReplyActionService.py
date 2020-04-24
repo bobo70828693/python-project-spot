@@ -4,6 +4,7 @@ import DistanceService
 import os
 import WeatherService
 import configparser
+import globals
 from dotenv import load_dotenv
 from time import strftime,strptime,gmtime
 from datetime import datetime, timedelta
@@ -238,16 +239,20 @@ def RecommendSpot(lineBotApi, userId, replyToken, data = None):
         )
     )
 
-def RecommendPoPularSpot(lineBotApi, userId):
+def RecommendCustomSpot(lineBotApi, userId, replyToken, mode = 'popular', data = None):
     s = hashlib.sha1()
     s.update(userId.encode('utf-8'))
     enUserId = s.hexdigest()
     userPath = 'users/{enUserId}'.format(enUserId=enUserId)
     FirebaseConnect.updateDataFirebase(userPath, {'mode': 'popular'})
 
-    popularSpotList = DistanceService.PopularSpot()
+    if mode == 'popular':
+        spotList = DistanceService.PopularSpot()
+    elif mode == 'region':
+        spotList = DistanceService.RegionSpot(data)
+
     carouselColumn = []
-    for oneSpot in popularSpotList:
+    for oneSpot in spotList:
         weatherInfo = WeatherService.getWeatherInfo(oneSpot['address'])
         weatherImgUrl = config['weather.classify'][str(weatherInfo['weather']['classify'])]
         bodyComponent = {
@@ -371,55 +376,65 @@ def RecommendPoPularSpot(lineBotApi, userId):
         "contents": carouselColumn
     }
 
-    lineBotApi.push_message(
-        userId,
+    lineBotApi.reply_message(
+        replyToken,
         FlexSendMessage(
             alt_text="熱門景點",
             contents=FlexMsg
         )
     )
 
-def ReviewSpot(lineBotApi, userId):
+def ReviewSpot(lineBotApi, userId, replyToken):
     s = hashlib.sha1()
     s.update(userId.encode('utf-8'))
     enUserId = s.hexdigest()
 
+    result = 'ok'
     dataPath = 'users/{enUserId}/'.format(enUserId=enUserId)
     data = FirebaseConnect.getDataFirebase(dataPath)
-    currentSpot = data.get("spotList", [])
-    if len(currentSpot) > 0:
-        # 過濾掉已取消的
-        currentSpot = [spot for spot in currentSpot if 'unLike' not in spot]
-        columns = []
-        for key, userSpot in enumerate(currentSpot):
-            spotInfo = FirebaseConnect.getDataFirebase('spotInform/{spotTitle}'.format(spotTitle=userSpot['name']))
-            columns += [
-                CarouselColumn(
-                    thumbnail_image_url=spotInfo['thumbnailUrl'],
-                        title=userSpot['name'],
-                        text=spotInfo['address'],
-                        actions=[
-                            PostbackAction(
-                                label='不要了',
-                                display_text='討厭',
-                                data='action=unLike&key={key}'.format(key=key)
-                            )
-                        ]
-            )]
-        
-        lineBotApi.push_message(
-            userId,
-            TemplateSendMessage(
-                alt_text="你挑選的景點",
-                template=CarouselTemplate(
-                    columns=columns
-                )))
+    if data is not None:
+        currentSpot = data.get("spotList", [])
+        if len(currentSpot) > 0:
+            # 過濾掉已取消的
+            currentSpot = [spot for spot in currentSpot if 'unLike' not in spot]
+            columns = []
+            for key, userSpot in enumerate(currentSpot):
+                spotInfo = FirebaseConnect.getDataFirebase('spotInform/{spotTitle}'.format(spotTitle=userSpot['name']))
+                columns += [
+                    CarouselColumn(
+                        thumbnail_image_url=spotInfo['thumbnailUrl'],
+                            title=userSpot['name'],
+                            text=spotInfo['address'],
+                            actions=[
+                                PostbackAction(
+                                    label='不要了',
+                                    display_text='討厭',
+                                    data='action=unLike&key={key}'.format(key=key)
+                                )
+                            ]
+                )]
+            
+            lineBotApi.reply_message(
+                replyToken,
+                TemplateSendMessage(
+                    alt_text="你挑選的景點",
+                    template=CarouselTemplate(
+                        columns=columns
+                    )))
+        else:
+            result = 'err'
+            lineBotApi.reply_message(
+                replyToken,
+                TextSendMessage(text="尚未挑選景點"))
     else:
-        lineBotApi.push_message(
-            userId,
+        result = 'err'
+        lineBotApi.reply_message(
+            replyToken,
             TextSendMessage(text="尚未挑選景點"))
 
-def EstablishTrip(lineBotApi, userId):
+    return result
+
+def EstablishTrip(lineBotApi, userId, replyToken):
     s = hashlib.sha1()
     s.update(userId.encode('utf-8'))
     enUserId = s.hexdigest()
@@ -705,29 +720,32 @@ def EstablishTrip(lineBotApi, userId):
                 "contents": bodyContent
             }
         }
-        lineBotApi.push_message(
-            userId,
+        lineBotApi.reply_message(
+            replyToken,
             FlexSendMessage(
                 alt_text="建立行程",
                 contents=FlexMsg
             )
         )
 
-def PickTransportation(lineBotApi, userId):
-    lineBotApi.push_message(userId, TextSendMessage(
-        text="選擇你的交通方式",
-        quick_reply=QuickReply(
-            items=[
-                QuickReplyButton(image_url="https://storage.googleapis.com/python-project-spot.appspot.com/icons/car_icon.png", action=PostbackAction(label="瑪莎他弟", display_text="汽車", data="action=pick_transportation&transportation=driving&display_text=汽車")),
-                QuickReplyButton(image_url="https://storage.googleapis.com/python-project-spot.appspot.com/icons/walk_icon.png", action=PostbackAction(label="11號公車", display_text="走路", data="action=pick_transportation&transportation=walking&display_text=走路")),
-                QuickReplyButton(image_url="https://storage.googleapis.com/python-project-spot.appspot.com/icons/bike_icon.png", action=PostbackAction(label="卡打掐", display_text="腳踏車", data="action=pick_transportation&transportation=bicycling&display_text=腳踏車")),
-                # QuickReplyButton(image_url="https://storage.googleapis.com/python-project-spot.appspot.com/icons/bus_icon.png", action=PostbackAction(label="真的公車", display_text="大眾交通工具", data="action=pick_transportation&transportation=transit"))
-            ]
+def PickTransportation(lineBotApi, replyToken):
+    lineBotApi.reply_message(
+        replyToken, 
+        TextSendMessage(
+            text="選擇你的交通方式",
+            quick_reply=QuickReply(
+                items=[
+                    QuickReplyButton(image_url="https://storage.googleapis.com/python-project-spot.appspot.com/icons/car_icon.png", action=PostbackAction(label="瑪莎他弟", display_text="汽車", data="action=pick_transportation&transportation=driving&display_text=汽車")),
+                    QuickReplyButton(image_url="https://storage.googleapis.com/python-project-spot.appspot.com/icons/walk_icon.png", action=PostbackAction(label="11號公車", display_text="走路", data="action=pick_transportation&transportation=walking&display_text=走路")),
+                    QuickReplyButton(image_url="https://storage.googleapis.com/python-project-spot.appspot.com/icons/bike_icon.png", action=PostbackAction(label="卡打掐", display_text="腳踏車", data="action=pick_transportation&transportation=bicycling&display_text=腳踏車")),
+                    # QuickReplyButton(image_url="https://storage.googleapis.com/python-project-spot.appspot.com/icons/bus_icon.png", action=PostbackAction(label="真的公車", display_text="大眾交通工具", data="action=pick_transportation&transportation=transit"))
+                ]
+            )
         )
-    ))
+    )
     return 'ok'
 
-def PushMessage(lineBotApi, token, text):
+def ReplyMessage(lineBotApi, token, text):
     lineBotApi.reply_message(token, TextSendMessage(
         text=text
     ))
@@ -744,8 +762,8 @@ def PickGps(lineBotApi, userId):
     ))
 
 def SpotDetail(lineBotApi, replyToken, spotName, distance):
-    dataPath = "spotInform/{spotName}".format(spotName=spotName)
-    spotInfo = FirebaseConnect.getDataFirebase(dataPath)
+    spotList = globals.spotData
+    spotInfo = spotList.get(spotName)
     weatherInfo = WeatherService.getWeatherInfo(spotInfo['address'])
     weatherImgUrl = config['weather.classify'][str(weatherInfo['weather']['classify'])]
     imgContent = []

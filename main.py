@@ -1,3 +1,4 @@
+import configparser
 import DistanceService
 import os
 import FirebaseConnect
@@ -18,17 +19,8 @@ from linebot.models import (
     MessageEvent, 
     TextMessage, 
     TextSendMessage, 
-    LocationMessage, 
-    FlexSendMessage, 
-    CarouselTemplate, 
-    TemplateSendMessage, 
-    CarouselColumn, 
-    PostbackAction, 
-    MessageAction, 
-    URIAction, 
-    PostbackEvent,
-    QuickReplyButton,
-    QuickReply
+    LocationMessage,
+    PostbackEvent
 )
 
 app = Flask(__name__)
@@ -38,6 +30,8 @@ secret = os.getenv('LINE_CHANNEL_SECRET')
 accessToken = os.getenv('LINE_CHANNEL_ACCESS_TOKEN')
 line_bot_api = LineBotApi(accessToken)
 handler = WebhookHandler(secret)
+config = configparser.ConfigParser()
+config.read('region.ini')
 
 @app.route("/", methods=['GET'])
 def hello():
@@ -64,33 +58,41 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    print(event)
     userId = event.source.user_id
     s = hashlib.sha1()
     s.update(userId.encode('utf-8'))
     enUserId = s.hexdigest()
-    if event.message.text == '規劃行程':
+    regions = []
+    regions += [region for region in config['city']]
+    eventMsg = event.message.text
+    if eventMsg == '規劃行程':
         # initial user travel
         basePath = 'users/{enUserId}'.format(enUserId=enUserId)
         FirebaseConnect.deleteDataFirebase(basePath)
 
         # pick transportation
+        ReplyActionService.PickTransportation(line_bot_api, event.reply_token)
+    elif eventMsg == '熱門景點':
+        ReplyActionService.RecommendCustomSpot(line_bot_api, userId, event.reply_token, 'popular')
+    elif eventMsg == '建立行程':
+        ReplyActionService.EstablishTrip(line_bot_api, userId, event.reply_token)
+    elif eventMsg == '查看目前清單':
+        result = ReplyActionService.ReviewSpot(line_bot_api, userId, event.reply_token)
+        if result == 'ok':
+            ReplyActionService.AskEnd(line_bot_api, userId, 'preview')
+    elif eventMsg == '出發時間':
         ReplyActionService.PickTransportation(line_bot_api, userId)
-    elif event.message.text == '熱門景點':
-        ReplyActionService.RecommendPoPularSpot(line_bot_api, userId)
-    elif event.message.text == '建立行程':
-        ReplyActionService.EstablishTrip(line_bot_api, userId)
-    elif event.message.text == '查看目前清單':
-        ReplyActionService.ReviewSpot(line_bot_api, userId)
-        ReplyActionService.AskEnd(line_bot_api, userId, 'preview')
-    elif event.message.text == '出發時間':
-        ReplyActionService.PickTransportation(line_bot_api, userId)
-    elif event.message.text == '更多景點':
+    elif eventMsg == '更多景點':
         ReplyActionService.RecommendSpot(line_bot_api, userId, event.reply_token)
-    elif event.message.text == '清除目前清單':
+    elif eventMsg == '清除目前清單':
         # initial user travel
         basePath = 'users/{enUserId}/spotList'.format(enUserId=enUserId)
         FirebaseConnect.deleteDataFirebase(basePath)
+    elif any(eventMsg for region in regions if region.find(eventMsg.replace('台','臺')) != -1):
+        region = eventMsg.replace('台','臺')
+        # app.logger.info('Request: ' + str(event))
+        ReplyActionService.RecommendCustomSpot(line_bot_api, userId, event.reply_token, 'region', region)
+        
 
 @handler.add(MessageEvent, message=LocationMessage)
 def handle_location(event):
@@ -99,7 +101,6 @@ def handle_location(event):
     enUserId = s.hexdigest()
     if event.message.type == 'location':
         userPath = 'users/{enUserId}/mode'.format(enUserId = enUserId)
-
         userMode = FirebaseConnect.getDataFirebase(userPath)
         data = event.message
         if userMode == 'establish':
@@ -109,7 +110,7 @@ def handle_location(event):
             }
             posPath = "users/{enUserId}/pos".format(enUserId=enUserId)
             FirebaseConnect.insertDataFirebase(posPath, pos)
-            ReplyActionService.EstablishTrip(line_bot_api, event.source.user_id)
+            ReplyActionService.EstablishTrip(line_bot_api, event.source.user_id, event.reply_token)
         else:
             ReplyActionService.RecommendSpot(line_bot_api, event.source.user_id, event.reply_token, data)
 
@@ -174,7 +175,7 @@ def reply_back(event):
             dataPath = 'users/{enUserId}/startTime'.format(enUserId = enUserId)
             FirebaseConnect.insertDataFirebase(dataPath, pickTime)
             replyText = "你選的出發時間為: {time}".format(time=pickTime)
-            result = ReplyActionService.PushMessage(line_bot_api, event.reply_token, replyText)
+            result = ReplyActionService.ReplyMessage(line_bot_api, event.reply_token, replyText)
             if result == 'ok':
                 ReplyActionService.AskEstablished(line_bot_api, event.source.user_id)
             #     ReplyActionService.PickTransportation(line_bot_api, event.source.user_id)
@@ -183,7 +184,7 @@ def reply_back(event):
             dataPath = 'users/{enUserId}/transportation'.format(enUserId = enUserId)
             FirebaseConnect.insertDataFirebase(dataPath, data['transportation'][0])
             replyText = "你挑選的交通工具為: {transportation}".format(transportation=data['display_text'][0])
-            result = ReplyActionService.PushMessage(line_bot_api, event.reply_token, replyText)
+            result = ReplyActionService.ReplyMessage(line_bot_api, event.reply_token, replyText)
             if result == 'ok':
                 # 傳送gps
                 ReplyActionService.PickGps(line_bot_api, event.source.user_id)
