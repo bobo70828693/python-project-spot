@@ -81,7 +81,7 @@ def handle_message(event):
         if result == 'ok':
             ReplyActionService.AskEnd(line_bot_api, userId, 'preview')
     elif eventMsg == '出發時間':
-        ReplyActionService.PickTransportation(line_bot_api, userId)
+        ReplyActionService.PickTransportation(line_bot_api, event.reply_token)
     elif eventMsg == '更多景點':
         basePath = 'users/{enUserId}'.format(enUserId=enUserId)
         data = FirebaseConnect.getDataFirebase(basePath)
@@ -185,7 +185,6 @@ def reply_back(event):
             result = ReplyActionService.ReplyMessage(line_bot_api, event.reply_token, replyText)
             if result == 'ok':
                 ReplyActionService.AskEstablished(line_bot_api, event.source.user_id)
-            #     ReplyActionService.PickTransportation(line_bot_api, event.source.user_id)
         elif action == 'pick_transportation':
             # 挑選交通工具
             dataPath = 'users/{enUserId}/transportation'.format(enUserId = enUserId)

@@ -4,6 +4,7 @@ import DistanceService
 import os
 import WeatherService
 import configparser
+import urllib
 import globals
 from dotenv import load_dotenv
 from time import strftime,strptime,gmtime
@@ -454,11 +455,29 @@ def EstablishTrip(lineBotApi, userId, replyToken):
     pos = data.get("pos")
 
     if pos is None:
-        PickTransportation(lineBotApi, userId)
+        PickTransportation(lineBotApi, replyToken)
     else:
         currentSpot = data.get("spotList", [])
         # 過濾掉已取消的
         currentSpot = [spot for spot in currentSpot if 'unLike' not in spot]
+        handleSpot = []
+        for spot in currentSpot:
+            if 'unLike' not in spot:
+                if spot.get('distance', 0) == 0:
+                    spotInfo = FirebaseConnect.getDataFirebase('/spotInform/{spotName}'.format(spotName=spot.get('name')))
+                    destPost = {
+                        'lat': float(spotInfo.get('lat')),
+                        'long': float(spotInfo.get('long'))
+                    }
+                    distance = DistanceService.getDistance(pos, destPost)
+                    handleSpot += [{
+                        'name': spot['name'],
+                        'distance': distance
+                    }]
+                else:
+                    handleSpot += [spot]
+
+        currentSpot = handleSpot
         currentSpot.sort(key = lambda k: (float(k.get('distance'))))
         defaultStartTime = datetime.now() + timedelta(hours=1)
         userTransportation = data.get("transportation", "driving")
@@ -523,6 +542,7 @@ def EstablishTrip(lineBotApi, userId, replyToken):
                 "cornerRadius": "30px",
             },
         ]
+        googleRouteUrl = 'https://www.google.com/maps/dir/?api=1&origin={userLat},{userLong}&destination={destination}&travelmode={travelMode}&waypoints='.format(userLat=pos.get('lat'), userLong=pos.get('long'), destination=urllib.parse.quote(currentSpot[-1]['name']), travelMode=userTransportation)
         nextTimeStr = userStartTime 
         for key, spotInfo in enumerate(currentSpot):
             getDestinationInfo = FirebaseConnect.getDataFirebase('/spotInform/{spotName}'.format(spotName=spotInfo['name']))
@@ -530,6 +550,8 @@ def EstablishTrip(lineBotApi, userId, replyToken):
                 'lat': getDestinationInfo['lat'],
                 'long': getDestinationInfo['long']
             }
+            enSpotAddress = urllib.parse.quote(getDestinationInfo['address'])
+            googleRouteUrl += urllib.parse.quote(getDestinationInfo['address'] + "|") if (key != length - 1) else ''
             distanceResult = DistanceService.calPlaceInfo(lastPos, destPos, userTransportation)
             lastPos = destPos
             durationTime = distanceResult['rows'][0]['elements'][0]['duration']['value']
@@ -578,7 +600,7 @@ def EstablishTrip(lineBotApi, userId, replyToken):
                             }
                             ],
                             "width": "2px",
-                            "backgroundColor": "#6486E3"
+                            "backgroundColor": "#48A7FA"
                         },
                         {
                             "type": "filler"
@@ -604,7 +626,7 @@ def EstablishTrip(lineBotApi, userId, replyToken):
                 
         
             # 增加景點，組合FlexMessage
-            circleColor = "#6486E3"
+            circleColor = "#48A7FA"
             bodyContent += [
                 {
                     "type": "box",
@@ -713,11 +735,36 @@ def EstablishTrip(lineBotApi, userId, replyToken):
                 }
             ],
             "paddingAll": "20px",
-            "backgroundColor": "#0367D3",
+            "backgroundColor": "#48A7FA",
             "spacing": "md",
             "height": "154px",
             "paddingTop": "22px"
         }
+
+        FlexFooter = {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "button",
+                            "style": "link",
+                            "action": {
+                                "type": "uri",
+                                "label": "開啟地圖路線",
+                                "uri": googleRouteUrl
+                            },
+                            "color": "#ffffff"
+                        }
+                    ],
+                    "backgroundColor": "#42a7f5",
+                    "cornerRadius": "10px"
+                }
+            ]
+      }
 
         FlexMsg = {
             "type": "bubble",
@@ -727,8 +774,10 @@ def EstablishTrip(lineBotApi, userId, replyToken):
                 "type": "box",
                 "layout": "vertical",
                 "contents": bodyContent
-            }
+            },
+            "footer": FlexFooter
         }
+
         lineBotApi.reply_message(
             replyToken,
             FlexSendMessage(
