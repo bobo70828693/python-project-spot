@@ -953,7 +953,8 @@ def SpotDetail(lineBotApi, replyToken, spotName, distance):
         {
             "type": "box",
             "layout": "horizontal",
-            "contents": imgContent
+            "contents": imgContent,
+            "cornerRadius": "10px"
         },
         # description box
         {
@@ -1001,7 +1002,10 @@ def SpotDetail(lineBotApi, replyToken, spotName, distance):
                 }
             ],
             "spacing": "xl",
-            "paddingAll": "20px"
+            "paddingAll": "20px",
+            "cornerRadius": "10px",
+            "margin": "lg",
+            "backgroundColor": "#ffffff"
         }
     ]
 
@@ -1010,12 +1014,22 @@ def SpotDetail(lineBotApi, replyToken, spotName, distance):
         "body": {
             "type": "box",
             "layout": "vertical",
-            "contents": bodyContent
+            "contents": bodyContent,
+            "backgroundColor": "#2d6496"
         },
         "footer": {
             "type": "box",
             "layout": "vertical",
-            "contents": footerContent,
+            "contents": [
+                {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": footerContent,
+                    "cornerRadius": "10px",
+                    "backgroundColor": "#ffffff",
+                }
+            ],
+            "backgroundColor": "#2d6496",
             "flex": 0
         }
     }
@@ -1029,3 +1043,64 @@ def SpotDetail(lineBotApi, replyToken, spotName, distance):
     )
 
     return 'ok'
+
+def RecommendFriend(lineBotApi, replyToken):
+    FlexMsg = {
+        "type": "bubble",
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+            {
+                "type": "box",
+                "layout": "horizontal",
+                "contents": [
+                {
+                    "type": "image",
+                    "url": "https://qr-official.line.me/sid/L/164zqivz.png",
+                    "size": "full",
+                    "flex": 1
+                }
+                ],
+                "cornerRadius": "10px"
+            }
+            ],
+            "backgroundColor": "#2d6496"
+        },
+        "footer": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+            {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                {
+                    "type": "button",
+                    "style": "link",
+                    "action": {
+                    "type": "uri",
+                    "label": "馬上推薦",
+                    "uri": "https://line.me/R/nv/recommendOA/@164zqivz"
+                    },
+                    "color": "#2d6496"
+                }
+                ],
+                "cornerRadius": "10px",
+                "backgroundColor": "#ffffff"
+            }
+            ],
+            "flex": 0,
+            "backgroundColor": "#2d6496"
+        }
+    }
+
+    lineBotApi.reply_message(
+        replyToken,
+        FlexSendMessage(
+            alt_text="推薦好友",
+            contents=FlexMsg
+        )
+    )
+
+    return 'ok';

@@ -95,6 +95,8 @@ def handle_message(event):
         # initial user travel
         basePath = 'users/{enUserId}/spotList'.format(enUserId=enUserId)
         FirebaseConnect.deleteDataFirebase(basePath)
+    elif eventMsg == '推薦好友':
+        ReplyActionService.RecommendFriend(line_bot_api, event.reply_token)
     elif any(eventMsg for region in regions if region.find(eventMsg.replace('台','臺')) != -1):
         region = eventMsg.replace('台','臺')
         # app.logger.info('Request: ' + str(event))
