@@ -11,12 +11,7 @@
 * 點擊行程表上的 **開啟地圖路線** ，立刻為您開啟google導航至所挑選景點
 * 點擊圖文選單上的 **推薦好友** ， 立馬分享給好友
 ## 實際使用畫面
-初始登入頁面 | 點選圖文選單熱門推薦 | 
----|---
-<img src="https://i.imgur.com/nd1ZNOy.png" data-canonical-src="https://i.imgur.com/nd1ZNOy.png" width="250" /> | <img src="https://i.imgur.com/nd1ZNOy.png" data-canonical-src="https://i.imgur.com/nd1ZNOy.png" width="250" />|
-
-<img src="image/whatsapp.gif" height="300em" />
-<img src="https://s17.aconvert.com/convert/p3r68-cdx67/id2o4-9n8jb.gif" height="500em" /><img src="https://i.imgur.com/nd1ZNOy.png" height="500em" />
+<img src="images/line_bot_spot_1.gif" height="300em" />
 
 ## 使用技術
 * Python
