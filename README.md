@@ -14,8 +14,7 @@
 * 點擊圖文選單上的 **推薦好友** ， 立馬分享給好友
 
 ## 實際使用畫面
-<img src="https://i.imgur.com/PttwizT.gif" height="300em" /> <img src="https://i.imgur.com/jDViFDT.gif" height="300em" /> <img src="https://i.imgur.com/ktnYPUM.gif" height="300em" />
-<img src="https://i.imgur.com/yy3bqh2.gif" height="300em" /> <img src="https://i.imgur.com/VrJyeGy.gif" height="300em" /> <img src="https://i.imgur.com/W0Z7a7R.gif" height="300em" />
+<img src="https://i.imgur.com/faKjda9.gif" height="300em" /><img src="https://i.imgur.com/CZiIb8m.gif" height="300em" /><img src="https://i.imgur.com/IoFttJW.gif" height="300em" /><img src="https://i.imgur.com/FPEcgSb.gif" height="300em" /><img src="https://i.imgur.com/faKjda9.gif" height="300em" />
 
 ## Line Bot QR Code
 <img src="images/line_bot_qr_code.png" height="200em" />
