@@ -19,6 +19,7 @@
 
 ## Line Bot QR Code
 <img src="images/line_bot_qr_code.png" height="200em" />
+
 ## 使用技術
 * Python
 * Beautiful Soup
